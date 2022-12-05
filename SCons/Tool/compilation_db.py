@@ -32,6 +32,7 @@ which is the name that most clang tools search for by default.
 import json
 import itertools
 import fnmatch
+import sys
 import SCons
 
 from .cxx import CXXSuffixes
@@ -114,13 +115,21 @@ def compilation_db_entry_action(target, source, env, **kw):
     :param kw:
     :return: None
     """
-
+    
+    # Disable potential TempFileMunge mechanism just for the substitution in following strfunction
+    # by raising MAXLINELENGTH to highest possible integer value
+    org_maxlinelength = env["__COMPILATIONDB_ENV"]['MAXLINELENGTH']
+    env["__COMPILATIONDB_ENV"]['MAXLINELENGTH'] = sys.maxsize
+    
     command = env["__COMPILATIONDB_UACTION"].strfunction(
         target=env["__COMPILATIONDB_UOUTPUT"],
         source=env["__COMPILATIONDB_USOURCE"],
         env=env["__COMPILATIONDB_ENV"],
     )
-
+    
+    # restore MAXLINELENGTH once substitution is done
+    env["__COMPILATIONDB_ENV"]['MAXLINELENGTH'] = org_maxlinelength
+    
     entry = {
         "directory": env.Dir("#").abspath,
         "command": command,
